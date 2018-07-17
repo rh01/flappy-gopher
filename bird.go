@@ -7,7 +7,10 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
-const gravity = 2.5
+const (
+	gravity   = 2.5
+	jumpSpeed = 10
+)
 
 type bird struct {
 	time     int
@@ -54,4 +57,9 @@ func (b *bird) destroy() {
 	for _, t := range b.textures {
 		t.Destroy()
 	}
+}
+
+func (b *bird) jump() {
+	b.speed = -jumpSpeed
+
 }
