@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type scene struct {
-	bg *sdl.Texture
+	time  int
+	bg    *sdl.Texture
+	birds []*sdl.Texture
 }
 
 func newScene(r *sdl.Renderer) (*scene, error) {
@@ -17,16 +21,58 @@ func newScene(r *sdl.Renderer) (*scene, error) {
 		return nil, fmt.Errorf("counld not load background %v", err)
 	}
 
-	return &scene{bg: t}, nil
+	var birds []*sdl.Texture
+	for i := 1; i < 4; i++ {
+		path := fmt.Sprintf("res/imgs/bird_frame_%d.png", i)
+		bird, err := img.LoadTexture(r, path)
+		if err != nil {
+			return nil, fmt.Errorf("counld not load bird %v", err)
+		}
+		birds = append(birds, bird)
+	}
+
+	return &scene{bg: t, birds: birds}, nil
+}
+
+func (s *scene) run(ctx context.Context, r *sdl.Renderer) <-chan error {
+	errc := make(chan error)
+
+	go func() {
+		defer close(errc)
+
+		for range time.Tick(100 * time.Millisecond) {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				if err := s.paint(r); err != nil {
+					errc <- err
+				}
+			}
+		}
+	}()
+	return errc
 }
 
 func (s *scene) paint(r *sdl.Renderer) error {
+	s.time++
+
 	r.Clear()
 
 	if err := r.Copy(s.bg, nil, nil); err != nil {
 		return fmt.Errorf("could not copy background %v", err)
 	}
 
+	i := s.time % len(s.birds)
+	rect := &sdl.Rect{X: 10, Y: 300 - 43/2, W: 50, H: 43}
+	if err := r.Copy(s.birds[i], nil, rect); err != nil {
+		return fmt.Errorf("could not copy bird %v", err)
+	}
+
 	r.Present()
 	return nil
+}
+
+func (s *scene) destory() {
+	s.bg.Destroy()
 }
