@@ -68,11 +68,17 @@ func (ps *pipes) update() {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
+	var rem []*pipe
 	for _, p := range ps.pipes {
 		p.mu.Lock()
 		p.x -= ps.speed
 		p.mu.Unlock()
+		if p.x > 0 {
+			rem = append(rem, p)
+		}
 	}
+
+	ps.pipes = rem
 
 }
 
